@@ -26,13 +26,13 @@
           @click="addOrUpdateHandle()"
           >新增</el-button
         >
-        <el-button
+        <!-- <el-button
           v-if="isAuth('sys:role:delete')"
           type="danger"
           @click="deleteHandle()"
           :disabled="dataListSelections.length <= 0"
           >批量删除</el-button
-        >
+        > -->
       </el-form-item>
     </el-form>
     <el-table
@@ -233,10 +233,11 @@ export default {
     },
     // 删除
     deleteHandle (id) {
-      var ids = id ? [id] : this.dataListSelections.map(item => {
-        return item.roleId
-      })
-      this.$confirm(`确定对[id=${ids.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
+      // var ids = id ? [id] : this.dataListSelections.map(item => {
+      //   return item.roleId
+      // })
+      var ids = id
+      this.$confirm(`确定对[id=${ids}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
