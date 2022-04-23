@@ -5,12 +5,18 @@
       :model="dataForm"
       @keyup.enter.native="getDataList()"
     >
-      <el-form-item>
+      <el-form-item label="分子行名称">
         <el-input
-          v-model="dataForm.roleName"
-          placeholder="部门名称"
+          v-model="dataForm.departName"
+          placeholder="分子行名称"
           clearable
         ></el-input>
+      </el-form-item>
+      <el-form-item label="分子行状态">
+        <el-select v-model="dataForm.status" placeholder="状态">
+          <el-option value="0" label="正常"></el-option>
+          <el-option value="1" label="停用"></el-option>
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button @click="getDataList()">查询</el-button>
@@ -44,7 +50,7 @@
       >
       </el-table-column>
       <el-table-column
-        prop="roleId"
+        prop="departId"
         header-align="center"
         align="center"
         width="80"
@@ -52,14 +58,39 @@
       >
       </el-table-column>
       <el-table-column
-        prop="roleName"
+        prop="departName"
         header-align="center"
         align="center"
-        label="部门名称"
+        label="分子行名称"
       >
       </el-table-column>
       <el-table-column
-        prop="remark"
+        prop="status"
+        header-align="status"
+        align="center"
+        label="状态"
+      >
+      </el-table-column>
+
+      <el-table-column
+        prop="sysRole"
+        header-align="center"
+        align="center"
+        label="角色"
+      >
+        <template slot-scope="scope">
+          <el-button
+            style="padding: 2px 3px"
+            size="mini"
+            type="info"
+            v-for="e in scope.row.sysRole"
+            :key="e.roleId"
+            >{{ e.roleName }}</el-button
+          >
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="description"
         header-align="center"
         align="center"
         label="备注"
@@ -74,6 +105,14 @@
       >
       </el-table-column>
       <el-table-column
+        prop="updateTime"
+        header-align="center"
+        align="center"
+        width="180"
+        label="修改時間"
+      >
+      </el-table-column>
+      <el-table-column
         fixed="right"
         header-align="center"
         align="center"
@@ -85,14 +124,14 @@
             v-if="isAuth('sys:role:update')"
             type="text"
             size="small"
-            @click="addOrUpdateHandle(scope.row.roleId)"
+            @click="addOrUpdateHandle(scope.row)"
             >修改</el-button
           >
           <el-button
             v-if="isAuth('sys:role:delete')"
             type="text"
             size="small"
-            @click="deleteHandle(scope.row.roleId)"
+            @click="deleteHandle(scope.row.departId)"
             >删除</el-button
           >
         </template>
@@ -118,12 +157,14 @@
 </template>
 
 <script>
+import { throws } from 'assert'
 import AddOrUpdate from './department-add-or-update'
 export default {
   data () {
     return {
       dataForm: {
-        roleName: ''
+        departName: '',
+        status: ''
       },
       dataList: [],
       pageIndex: 1,
@@ -145,12 +186,13 @@ export default {
     getDataList () {
       this.dataListLoading = true
       this.$http({
-        url: this.$http.adornUrl('/sys/role/list'),
+        url: this.$http.adornUrl('/sys/depart/list'),
         method: 'get',
         params: this.$http.adornParams({
-          'page': this.pageIndex,
-          'limit': this.pageSize,
-          'roleName': this.dataForm.roleName
+          'currPage': this.pageIndex,
+          'pageSize': this.pageSize,
+          'departName': this.dataForm.departName,
+          'status': this.dataForm.status
         })
       }).then(({ data }) => {
         if (data && data.code === 0) {
@@ -179,10 +221,14 @@ export default {
       this.dataListSelections = val
     },
     // 新增 / 修改
-    addOrUpdateHandle (id) {
+    addOrUpdateHandle (data = '') {
       this.addOrUpdateVisible = true
       this.$nextTick(() => {
-        this.$refs.addOrUpdate.init(id)
+        let dataForm = undefined
+        if (data) {
+          dataForm = JSON.parse(JSON.stringify(data))
+        }
+        this.$refs.addOrUpdate.init(dataForm)
       })
     },
     // 删除
@@ -196,7 +242,7 @@ export default {
         type: 'warning'
       }).then(() => {
         this.$http({
-          url: this.$http.adornUrl('/sys/role/delete'),
+          url: this.$http.adornUrl('/sys/depart/deleteEnhance'),
           method: 'post',
           data: this.$http.adornData(ids, false)
         }).then(({ data }) => {

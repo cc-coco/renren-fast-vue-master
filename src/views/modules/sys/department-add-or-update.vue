@@ -1,7 +1,8 @@
 <template>
   <el-dialog
-    :title="!dataForm.id ? '新增' : '修改'"
+    :title="!dataForm.departId ? '新增' : '修改'"
     :close-on-click-modal="false"
+    @close="closeHandel"
     :visible.sync="visible"
   >
     <el-form
@@ -11,22 +12,29 @@
       @keyup.enter.native="dataFormSubmit()"
       label-width="80px"
     >
-      <el-form-item label="部门名称" prop="roleName">
-        <el-input v-model="dataForm.roleName" placeholder="部门名称"></el-input>
+      <el-form-item label="分子行名称" prop="departName" label-width="100px">
+        <el-input
+          v-model="dataForm.departName"
+          placeholder="分子行名称"
+        ></el-input>
       </el-form-item>
-      <el-form-item label="备注" prop="remark">
-        <el-input v-model="dataForm.remark" placeholder="备注"></el-input>
+      <el-form-item label="分子行状态" label-width="100px">
+        <el-select v-model="dataForm.status" placeholder="状态">
+          <el-option value="0" label="正常"></el-option>
+          <el-option value="1" label="停用"></el-option>
+        </el-select>
       </el-form-item>
-      <el-form-item size="mini" label="授权">
-        <el-tree
-          :data="menuList"
-          :props="menuListTreeProps"
-          node-key="menuId"
-          ref="menuListTree"
-          :default-expand-all="true"
-          show-checkbox
-        >
-        </el-tree>
+      <el-form-item label="备注" prop="description" label-width="100px">
+        <el-input v-model="dataForm.description" placeholder="备注"></el-input>
+      </el-form-item>
+      <el-form-item label="授权" label-width="100px">
+        <el-checkbox-group v-model="checkedList">
+          <el-checkbox
+            v-for="e in checkList"
+            :key="e.roleId"
+            :label="e.roleName"
+          ></el-checkbox>
+        </el-checkbox-group>
       </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
@@ -37,78 +45,87 @@
 </template>
 
 <script>
-import { treeDataTranslate } from '@/utils'
+
 export default {
   data () {
     return {
       visible: false,
-      menuList: [],
-      menuListTreeProps: {
-        label: 'name',
-        children: 'children'
-      },
+
       checkList: [],
+      checkedList: [],
       dataForm: {
-        id: 0,
-        roleName: '',
-        remark: ''
+        departId: 0,
+        departName: '',
+        status: '',
+        sysRole: [],
+        description: ''
       },
       dataRule: {
-        roleName: [
-          { required: true, message: '部门名称不能为空', trigger: 'blur' }
+        departName: [
+          { required: true, message: '分子行名称不能为空', trigger: 'blur' }
         ]
       },
-      tempKey: -666666 // 临时key, 用于解决tree半选中状态项不能传给后台接口问题. # 待优化
+
     }
   },
   methods: {
-    init (id) {
-      this.dataForm.id = id || 0
-      this.$http({
-        url: this.$http.adornUrl('/sys/menu/list'),
-        method: 'get',
-        params: this.$http.adornParams()
-      }).then(({ data }) => {
-        this.menuList = treeDataTranslate(data, 'menuId')
-      }).then(() => {
-        this.visible = true
-        this.$nextTick(() => {
-          this.$refs['dataForm'].resetFields()
-          this.$refs.menuListTree.setCheckedKeys([])
+    init (dataForm) {
+      if (dataForm) {
+        this.dataForm = dataForm
+
+        this.dataForm.sysRole.forEach(e => {
+          this.checkedList.push(e.roleName)
         })
-      }).then(() => {
-        if (this.dataForm.id) {
-          this.$http({
-            url: this.$http.adornUrl(`/sys/role/info/${this.dataForm.id}`),
-            method: 'get',
-            params: this.$http.adornParams()
-          }).then(({ data }) => {
-            if (data && data.code === 0) {
-              this.dataForm.roleName = data.role.roleName
-              this.dataForm.remark = data.role.remark
-              var idx = data.role.menuIdList.indexOf(this.tempKey)
-              if (idx !== -1) {
-                data.role.menuIdList.splice(idx, data.role.menuIdList.length - idx)
-              }
-              this.$refs.menuListTree.setCheckedKeys(data.role.menuIdList)
-            }
-          })
+      } else {
+        this.dataForm.departId = ""
+      }
+      console.info(this.dataForm)
+      this.$http({
+        url: this.$http.adornUrl('/sys/role/list'),
+        method: 'get',
+        params: this.$http.adornParams({
+
+        })
+      }).then(({ data }) => {
+        if (data && data.code === 0) {
+          this.checkList = data.page.list
+          this.visible = true
+        } else {
+          this.checkList = []
+
         }
+
       })
+    },
+    closeHandel () {
+      this.checkedList = []
+      this.dataForm.departId = ""
+      this.dataForm.departName = ""
+      this.dataForm.status = ""
+      this.dataForm.sysRole = []
+      this.dataForm.description = ""
     },
     // 表单提交
     dataFormSubmit () {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
+          let str = JSON.stringify(this.checkedList)
+          this.checkList.forEach(e => {
+            if (str.indexOf(e.roleName) != -1) {
+              this.dataForm.sysRole.push(e.roleId)
+            }
+          })
           this.$http({
-            url: this.$http.adornUrl(`/sys/role/${!this.dataForm.id ? 'save' : 'update'}`),
+            url: this.$http.adornUrl(`/sys/depart/${!this.dataForm.departId ? 'save' : 'update'}`),
             method: 'post',
             data: this.$http.adornData({
-              'roleId': this.dataForm.id || undefined,
-              'roleName': this.dataForm.roleName,
-              'remark': this.dataForm.remark,
-              'menuIdList': [].concat(this.$refs.menuListTree.getCheckedKeys(), [this.tempKey], this.$refs.menuListTree.getHalfCheckedKeys())
+              'departId': this.dataForm.departId || undefined,
+              'departName': this.dataForm.departName,
+              'status': this.dataForm.status,
+              'sysRole': this.dataForm.sysRole,
+              'description': this.dataForm.description
             })
+
           }).then(({ data }) => {
             if (data && data.code === 0) {
               this.$message({
@@ -128,5 +145,6 @@ export default {
       })
     }
   }
+
 }
 </script>
