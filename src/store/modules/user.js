@@ -2,14 +2,18 @@ export default {
   namespaced: true,
   state: {
     id: 0,
-    name: ''
+    name: "",
+    distinguishing: ""
   },
   mutations: {
-    updateId (state, id) {
-      state.id = id
+    updateId(state, id) {
+      state.id = id;
     },
-    updateName (state, name) {
-      state.name = name
+    updateName(state, name) {
+      state.name = name;
+    },
+    updateDistinguishing(state, distinguishing) {
+      state.distinguishing = distinguishing;
     }
   }
-}
+};

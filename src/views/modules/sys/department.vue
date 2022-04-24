@@ -26,13 +26,13 @@
           @click="addOrUpdateHandle()"
           >新增</el-button
         >
-        <!-- <el-button
+        <el-button
           v-if="isAuth('sys:role:delete')"
           type="danger"
           @click="deleteHandle()"
           :disabled="dataListSelections.length <= 0"
           >批量删除</el-button
-        > -->
+        >
       </el-form-item>
     </el-form>
     <el-table
@@ -233,11 +233,26 @@ export default {
     },
     // 删除
     deleteHandle (id) {
-      // var ids = id ? [id] : this.dataListSelections.map(item => {
-      //   return item.roleId
-      // })
-      var ids = id
-      this.$confirm(`确定对[id=${ids}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
+      var ids = id ? [id] : this.dataListSelections.map(item => {
+        return item.departId
+      })
+      let roleId = []
+      let idsStr = JSON.stringify(ids)
+      console.info(ids)
+      this.dataList.forEach(e => {
+
+        if (ids.includes(e.departId)) {
+          let roleIds = []
+          e.sysRole.forEach(v => {
+            roleIds.push(v.roleId)
+          })
+
+          roleId.push({ departId: e.departId, id: e.id, roleId: roleIds })
+        }
+      })
+      console.info(roleId)
+      // var ids = id
+      this.$confirm(`确定对[id=${ids.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -245,7 +260,7 @@ export default {
         this.$http({
           url: this.$http.adornUrl('/sys/depart/deleteEnhance'),
           method: 'post',
-          data: this.$http.adornData(ids, false)
+          data: this.$http.adornData(roleId, false)
         }).then(({ data }) => {
           if (data && data.code === 0) {
             this.$message({

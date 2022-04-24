@@ -109,6 +109,7 @@ export default {
     dataFormSubmit () {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
+          this.dataForm.sysRole = []
           let str = JSON.stringify(this.checkedList)
           this.checkList.forEach(e => {
             if (str.indexOf(e.roleName) != -1) {
@@ -122,8 +123,9 @@ export default {
               'departId': this.dataForm.departId || undefined,
               'departName': this.dataForm.departName,
               'status': this.dataForm.status,
-              'sysRole': this.dataForm.sysRole,
-              'description': this.dataForm.description
+              'roleId': this.dataForm.sysRole,
+              'description': this.dataForm.description,
+              'distinguishing': String(this.$store.state.user.distinguishing)
             })
 
           }).then(({ data }) => {

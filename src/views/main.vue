@@ -86,6 +86,7 @@ export default {
           this.loading = false
           this.userId = data.user.userId
           this.userName = data.user.username
+          this.$store.commit('user/updateDistinguishing', data.user.distinguishing)
         }
       })
     }
